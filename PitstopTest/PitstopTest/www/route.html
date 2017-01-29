@@ -1,0 +1,229 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Waypoints in directions</title>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <style>
+        #right-panel {
+            font-family: 'Roboto','sans-serif';
+            line-height: 30px;
+            padding-left: 80px;
+            margin-top: 20px;
+        }
+
+        .bottom-panel { 
+            position: relative; 
+            margin-top: 1em;
+        }
+
+            #right-panel select, #right-panel input {
+                font-size: 15px;
+            }
+
+            #right-panel select {
+                width: 100%;
+            }
+
+            #right-panel i {
+                font-size: 12px;
+            }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+          
+            height: 100%;
+            float: left;
+            width: 100%;
+            height: 100%;
+        }
+
+        #right-panel {
+            border: 10em;
+            border-width: 2px;
+            width: 100%;
+            //height: 400px;
+           display: inline-block;
+            text-align: left;
+            padding-top: 0;
+        }
+
+        #directions-panel {
+            display: none;
+            margin-top: 10px;
+            background-color: #FFEE77;
+            padding: 10px;
+        }
+
+        #floating-panel {
+            position: absolute;
+            top: 10px;
+            left: 25%;
+            z-index: 5;
+            background-color: #fff;
+            padding: 5px;
+            border: 1px solid #999;
+            text-align: center;
+            font-family: 'Roboto','sans-serif';
+            line-height: 30px;
+            padding-left: 10px;
+        }
+
+        #floating-panel {
+            margin-left: -100px;
+        }
+
+        .button { 
+            background-color: #55acee;
+            padding: .5em 1em;
+            font-size: 12px;
+            color: white;
+            font-family: arial;
+            cursor: pointer;
+            border-radius: 7px;
+        }
+
+        b {
+            padding: 10px 7px 10px 4px;
+        }
+
+        #add {
+            margin-left: 165px;
+        }
+
+        #submit {
+            margin-left: 118px;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="banner">
+        <img src="images/pitstop2.jpg" />
+    </div>
+    <div id="right-panel">
+        <div>
+            <b>Start:</b>
+            <form>
+                <input type="text" id="start" />
+            </form>
+            <b>Pitstops:</b> <br>
+            <div id="pitstops">
+                <input type="text" id="dest1" />
+            </div>
+            <a class="button"  id="add">+</a>
+            
+            <br>
+            <b>End:</b>
+            <form>
+                <input type="text" id="end" />
+            </form>
+            <a class="button" id="submit">Get Route</a>
+        </div>
+    </div>
+    <div class="bottom-panel">
+        <div id="floating-panel">
+            <input type="button" value="Toggle Street View" onclick="toggleStreetView();"></input>
+        </div>
+    </div>
+    <div id="map"></div>
+    <div id="directions-panel"></div>
+    <script>
+
+      function initMap() {
+        var directionsService = new google.maps.DirectionsService;
+        var directionsDisplay = new google.maps.DirectionsRenderer;
+        var map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 7,
+          center: { lat: 47, lng: -122 }
+        });
+        directionsDisplay.setMap(map);
+
+        var pitstops = [];
+        var destNumber = 1;
+
+        $('#pitstops').on('blur', 'input', function () {
+            pitstops.push({
+                location: $(this).val(),
+                stopover: true
+            });
+        });
+
+        document.getElementById("add").addEventListener("click", function () {
+            destNumber += 1;
+            var newInput = document.createElement("input");
+            newInput.setAttribute("type", "text");
+            newInput.setAttribute("id", "dest".concat(destNumber));
+            document.getElementById("pitstops").appendChild(newInput);
+            $('#dest' + destNumber).focus();
+        });
+
+        document.getElementById("submit").addEventListener("click", function() {
+          calculateAndDisplayRoute(directionsService, directionsDisplay, pitstops);
+        });
+
+
+
+        var panorama;
+        panorama = map.getStreetView(
+);
+        panorama.setPosition(astorPlace);
+        panorama.setPov(({
+            heading: 265,
+            pitch: 0
+        }));
+    }
+
+    function toggleStreetView() {
+        var toggle = panorama.getVisible();
+        if (toggle == false) {
+            panorama.setVisible(true);
+        } else {
+            panorama.setVisible(false);
+        }
+    }
+
+    function calculateAndDisplayRoute(directionsService, directionsDisplay, pitstops) {
+
+        console.log(pitstops);
+
+        directionsService.route({
+          origin: document.getElementById('start').value,
+          destination: document.getElementById('end').value,
+          waypoints: pitstops,
+          optimizeWaypoints: true,
+          travelMode: 'DRIVING'
+        }, function(response, status) {
+          if (status === 'OK') {
+            directionsDisplay.setDirections(response);
+            var route = response.routes[0];
+            var summaryPanel = document.getElementById('directions-panel');
+            summaryPanel.innerHTML = '';
+            // For each route, display summary information.
+            for (var i = 0; i < route.legs.length; i++) {
+              var routeSegment = i + 1;
+              summaryPanel.innerHTML += '<b>Route Segment: ' + routeSegment +
+                  '</b><br>';
+              summaryPanel.innerHTML += route.legs[i].start_address + ' to ';
+              summaryPanel.innerHTML += route.legs[i].end_address + '<br>';
+              summaryPanel.innerHTML += route.legs[i].distance.text + '<br><br>';
+
+              $('#directions-panel').fadeIn();
+            }
+          } else {
+            window.alert('Directions request failed due to ' + status);
+          }
+        });
+      }
+    </script>
+    <script async defer
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAq8sKerAP1v9AHPNcoFwl-4DDf9p9_XmA&callback=initMap">
+    </script>
+</body>
+</html>
